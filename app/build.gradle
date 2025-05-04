@@ -11,6 +11,8 @@ android {
         versionName "1.0"
     }
 
+    namespace "com.appapi.al" // Added namespace
+
     buildTypes {
         release {
             minifyEnabled false
