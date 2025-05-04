@@ -43,5 +43,5 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
-    implementation 'androidx.viewpager:viewpager:1.0.0' // Corrected dependency
+    // Removed androidx.viewpager:viewpager:1.0.0 as it doesn't seem to be used
 }
