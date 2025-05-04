@@ -1,0 +1,46 @@
+name: Setup Gradle Wrapper
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+jobs:
+  setup-gradle:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Install Gradle
+      - name: Install Gradle
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.1-bin.zip
+          unzip -q gradle-8.1-bin.zip
+          export PATH=$PWD/gradle-8.1/bin:$PATH
+          gradle --version
+
+      # Generate Gradle Wrapper
+      - name: Generate Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 8.1
+          chmod +x ./gradlew
+          ls -l ./gradlew gradlew.bat gradle/wrapper/
+
+      # Commit Gradle Wrapper files
+      - name: Commit Gradle Wrapper
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add gradlew gradlew.bat gradle/wrapper/
+          git commit -m "Add Gradle Wrapper files"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
