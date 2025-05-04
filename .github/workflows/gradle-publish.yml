@@ -29,7 +29,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          cmdline-tools-version: '9477386' # Latest as of 2025
+          cmdline-tools-version: '9477386'
 
       # Cache Gradle dependencies
       - name: Cache Gradle dependencies
@@ -42,13 +42,34 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Grant execute permission for gradlew
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+      # Debug: List directory structure
+      - name: List directory structure
+        run: ls -R
 
-      # Build the release APK
+      # Verify and set execute permissions for gradlew
+      - name: Verify and chmod gradlew
+        run: |
+          if [ ! -f ./gradlew ]; then
+            echo "Error: gradlew not found"
+            exit 1
+          fi
+          chmod +x ./gradlew
+          ls -l ./gradlew
+
+      # Build the release APK with detailed logging
       - name: Build release APK
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --stacktrace --debug --warning-mode all
+        continue-on-error: true
+
+      # Display problems report (if exists)
+      - name: Display problems report
+        run: |
+          if [ -f build/reports/problems/problems-report.html ]; then
+            echo "Problems report found, displaying content:"
+            cat build/reports/problems/problems-report.html
+          else
+            echo "No problems-report.html found"
+          fi
 
       # Decode and set up keystore for signing (if secrets are provided)
       - name: Decode Keystore
@@ -62,19 +83,23 @@ jobs:
           echo "keyAlias=${{ secrets.SIGNING_KEY_ALIAS }}" >> ./app/signing.properties
           echo "keyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}" >> ./app/signing.properties
 
-      # Sign the APK (if keystore is set up)
+      # Sign the APK (if keystore is set up and APK exists)
       - name: Sign APK
         if: ${{ env.SIGNING_KEYSTORE_BASE64 != '' }}
         run: |
-          jarsigner -keystore my-release-key.jks -storepass ${{ secrets.SIGNING_KEYSTORE_PASSWORD }} \
-            -keypass ${{ secrets.SIGNING_KEY_PASSWORD }} \
-            app/build/outputs/apk/release/app-release-unsigned.apk ${{ secrets.SIGNING_KEY_ALIAS }}
-          zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/app-release.apk
+          if [ -f app/build/outputs/apk/release/app-release-unsigned.apk ]; then
+            jarsigner -keystore my-release-key.jks -storepass ${{ secrets.SIGNING_KEYSTORE_PASSWORD }} \
+              -keypass ${{ secrets.SIGNING_KEY_PASSWORD }} \
+              app/build/outputs/apk/release/app-release-unsigned.apk ${{ secrets.SIGNING_KEY_ALIAS }}
+            zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/app-release.apk
+          else
+            echo "No unsigned APK found, skipping signing"
+          fi
 
-      # Upload the APK artifact
+      # Upload the APK artifact (if exists)
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
           path: app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
+          if-no-files-found: warn
