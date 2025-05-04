@@ -27,12 +27,21 @@ jobs:
           export PATH=$PWD/gradle-8.1/bin:$PATH
           gradle --version
 
+      # Debug: List directory structure before generating wrapper
+      - name: List directory structure before
+        run: ls -R
+
       # Generate Gradle Wrapper
       - name: Generate Gradle Wrapper
         run: |
-          gradle wrapper --gradle-version 8.1
+          gradle wrapper --gradle-version 8.1 --distribution-type bin
           chmod +x ./gradlew
           ls -l ./gradlew gradlew.bat gradle/wrapper/
+        continue-on-error: true # Continue even if gradle wrapper fails
+
+      # Debug: List directory structure after generating wrapper
+      - name: List directory structure after
+        run: ls -R
 
       # Commit Gradle Wrapper files
       - name: Commit Gradle Wrapper
@@ -40,7 +49,7 @@ jobs:
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add gradlew gradlew.bat gradle/wrapper/
-          git commit -m "Add Gradle Wrapper files"
+          git commit -m "Add Gradle Wrapper files" || echo "No changes to commit"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
