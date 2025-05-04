@@ -75,6 +75,14 @@ jobs:
             echo "No problems-report.html found"
           fi
 
+      # Upload problems report as artifact (if exists)
+      - name: Upload problems report
+        uses: actions/upload-artifact@v4
+        with:
+          name: problems-report
+          path: build/reports/problems/problems-report.html
+          if-no-files-found: warn
+
       # Decode and set up keystore for signing (if secrets are provided)
       - name: Decode Keystore
         if: ${{ env.SIGNING_KEYSTORE_BASE64 != '' }}
