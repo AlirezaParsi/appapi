@@ -1,0 +1,6 @@
+*.iml
+.gradle/
+build/
+local.properties
+my-release-key.jks
+signing.properties
